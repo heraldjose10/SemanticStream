@@ -1,3 +1,4 @@
+from time import time
 from flask import Flask, render_template, session, copy_current_request_context
 from flask_socketio import (
     SocketIO,
@@ -19,6 +20,13 @@ socketio = SocketIO(app)
 @app.route("/")
 def hello():
     return render_template("index.html")
+
+
+@app.route("/api/time")
+def get_current_time():
+    return {
+        'time': time()
+    }
 
 
 @socketio.event
