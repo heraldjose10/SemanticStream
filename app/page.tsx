@@ -1,8 +1,10 @@
 import { checkEnvironment } from "./utils/base_url";
 
-async function getTime() {
+async function getTime(): Promise<{ time: string }> {
   // fetch data from server
-  const time = await fetch(checkEnvironment() + "/api/time");
+  const time = await fetch(checkEnvironment() + "/api/time", {
+    cache: "no-cache",
+  });
   return time.json();
 }
 
