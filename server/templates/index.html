@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      src="https://cdn.socket.io/4.7.4/socket.io.min.js"
+      integrity="sha384-Gr6Lu2Ajx28mzwyVR8CFkULdCU7kMlZ9UthllibdOSo6qAiN+yXNHqtgdTvFXMT4"
+      crossorigin="anonymous"
+    ></script>
+    <script type="text/javascript" charset="UTF-8">
+      document.addEventListener("DOMContentLoaded", function () {
+
+        // Connect to the Socket.IO server
+        var socket = io();
+
+        // Event handler for new connections. This is evoked when a connection
+        // is established with server.
+        socket.on("connect", function () {
+          socket.emit("my_event", { data: "I'm connected!" });
+        });
+
+        // Event handler for server sent data.The callback function is 
+        // invoked whenever the server emits data
+        // to the client. The data is then displayed in the "Received"
+        // section of the page.
+        socket.on("my_response", function (msg, cb) {
+          var logElement = document.getElementById("log");
+          var newDiv = document.createElement("div");
+          newDiv.innerHTML = "Received #" + msg.count + ": " + msg.data;
+          logElement.appendChild(newDiv);
+          if (cb) cb();
+        });
+
+        // Interval function that tests message latency by sending a "ping"
+        // message. The server then responds with a "pong" message and the
+        // round trip time is measured.
+        var pingPongTimes = [];
+        var startTime;
+        window.setInterval(function () {
+          startTime = new Date().getTime();
+          var transportElement = document.getElementById("transport");
+          transportElement.textContent = socket.io.engine.transport.name;
+          socket.emit("my_ping");
+        }, 1000);
+
+        // Handler for the "pong" message. When the pong is received, the
+        // time from the ping is stored, and the average of the last 30
+        // samples is average and displayed.
+        socket.on("my_pong", function () {
+          var latency = new Date().getTime() - startTime;
+          pingPongTimes.push(latency);
+          pingPongTimes = pingPongTimes.slice(-30); // keep last 30 samples
+          var sum = 0;
+
+          for (var i = 0; i < pingPongTimes.length; i++)
+            sum += pingPongTimes[i];
+        
+          var pingPongElement = document.getElementById("ping-pong");
+          pingPongElement.textContent =
+            Math.round((10 * sum) / pingPongTimes.length) / 10;
+        });
+
+        // Handlers for the different forms in the page.
+        // These accept data from the user and send it to the server in a
+        // variety of ways
+        document
+          .getElementById("emit")
+          .addEventListener("submit", function (event) {
+            event.preventDefault();
+            socket.emit("my_event", {
+              data: document.getElementById("emit_data").value,
+            });
+          });
+
+        document
+          .getElementById("broadcast")
+          .addEventListener("submit", function (event) {
+            event.preventDefault();
+            socket.emit("my_broadcast_event", {
+              data: document.getElementById("broadcast_data").value,
+            });
+          });
+
+        document
+          .getElementById("join")
+          .addEventListener("submit", function (event) {
+            event.preventDefault();
+            socket.emit("join", {
+              room: document.getElementById("join_room").value,
+            });
+          });
+
+        document
+          .getElementById("leave")
+          .addEventListener("submit", function (event) {
+            event.preventDefault();
+            socket.emit("leave", {
+              room: document.getElementById("leave_room").value,
+            });
+          });
+
+        document
+          .getElementById("send_room")
+          .addEventListener("submit", function (event) {
+            event.preventDefault();
+            socket.emit("my_room_event", {
+              room: document.getElementById("room_name").value,
+              data: document.getElementById("room_data").value,
+            });
+          });
+
+        document
+          .getElementById("close")
+          .addEventListener("submit", function (event) {
+            event.preventDefault();
+            socket.emit("close_room", {
+              room: document.getElementById("close_room").value,
+            });
+          });
+
+        document
+          .getElementById("disconnect")
+          .addEventListener("submit", function (event) {
+            event.preventDefault();
+            socket.emit("disconnect_request");
+          });
+      });
+    </script>
+    <title>Semantic Stream</title>
+  </head>
+  <body>
+    <h1>Flask-SocketIO Test</h1>
+    <p>
+      Async mode is: <b>{{ async_mode }}</b><br />
+      Current transport is: <b><span id="transport"></span></b><br />
+      Average ping/pong latency: <b><span id="ping-pong"></span>ms</b>
+    </p>
+    <h2>Send:</h2>
+    <form id="emit" method="POST" action="#">
+      <input
+        type="text"
+        name="emit_data"
+        id="emit_data"
+        placeholder="Message"
+      />
+      <input type="submit" value="Echo" />
+    </form>
+    <form id="broadcast" method="POST" action="#">
+      <input
+        type="text"
+        name="broadcast_data"
+        id="broadcast_data"
+        placeholder="Message"
+      />
+      <input type="submit" value="Broadcast" />
+    </form>
+    <form id="join" method="POST" action="#">
+      <input
+        type="text"
+        name="join_room"
+        id="join_room"
+        placeholder="Room Name"
+      />
+      <input type="submit" value="Join Room" />
+    </form>
+    <form id="leave" method="POST" action="#">
+      <input
+        type="text"
+        name="leave_room"
+        id="leave_room"
+        placeholder="Room Name"
+      />
+      <input type="submit" value="Leave Room" />
+    </form>
+    <form id="send_room" method="POST" action="#">
+      <input
+        type="text"
+        name="room_name"
+        id="room_name"
+        placeholder="Room Name"
+      />
+      <input
+        type="text"
+        name="room_data"
+        id="room_data"
+        placeholder="Message"
+      />
+      <input type="submit" value="Send to Room" />
+    </form>
+    <form id="close" method="POST" action="#">
+      <input
+        type="text"
+        name="close_room"
+        id="close_room"
+        placeholder="Room Name"
+      />
+      <input type="submit" value="Close Room" />
+    </form>
+    <form id="disconnect" method="POST" action="#">
+      <input type="submit" value="Disconnect" />
+    </form>
+    <h2>Receive:</h2>
+    <div id="log"></div>
+  </body>
+</html>
