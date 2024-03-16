@@ -14,7 +14,7 @@ from config import configs
 
 app = Flask(__name__)
 app.config.from_object(configs["development"])
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*") # To fix CORs error
 
 
 @app.route("/")
