@@ -1,43 +1,34 @@
 "use client";
-import { checkEnvironment } from "@/utils/base_url";
-import { ChangeEvent, useState, useEffect, useRef } from "react";
-import { Socket, io } from "socket.io-client";
+import { ChangeEvent, useState, useEffect } from "react";
+import { Socket } from "socket.io-client";
 
-type Props = {};
+type Props = {
+  socket: Socket;
+};
+
 type Message = {
   data: string;
   count: number;
 };
 
-const Chatbox: React.FC = (props: Props) => {
-  // to make sure that new connection is not made on rerender
-  const socketRef = useRef<Socket | null>(null);
-
+const Chatbox: React.FC<Props> = ({ socket }) => {
   const [currentMessage, setCurrentMessage] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
 
   useEffect(() => {
-    socketRef.current = io(checkEnvironment());
-
-    // make socket connection
-    socketRef.current.on("connect", () => {
-      socketRef.current?.emit("my_event", { data: "I'm connected!" });
-      console.log("connected");
-    });
-
-    // listen for messages
-    socketRef.current.on("my_response", (message: Message) => {
+    function onResponse(message: Message) {
       setMessages((prevMessages) => [...prevMessages, message]);
-    });
+    }
+    // listen for messages
+    socket.on("my_response", onResponse);
 
-    // cleanup by disconnecting
     return () => {
-      socketRef.current?.disconnect();
+      socket.off("my_response", onResponse);
     };
-  }, []);
+  });
 
   const sendMessage = () => {
-    socketRef.current?.emit("my_event", { data: currentMessage });
+    socket.emit("my_event", { data: currentMessage });
     // Clear the currentMessage state
     setCurrentMessage("");
   };

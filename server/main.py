@@ -1,3 +1,5 @@
+import base64
+import os.path
 from time import time
 from flask import Flask, render_template, session, copy_current_request_context
 from flask_socketio import (
@@ -14,7 +16,7 @@ from config import configs
 
 app = Flask(__name__)
 app.config.from_object(configs["development"])
-socketio = SocketIO(app, cors_allowed_origins="*") # To fix CORs error
+socketio = SocketIO(app, cors_allowed_origins="*")  # To fix CORs error
 
 
 @app.route("/")
@@ -24,9 +26,7 @@ def hello():
 
 @app.route("/api/time")
 def get_current_time():
-    return {
-        'time': time()
-    }
+    return {"time": time()}
 
 
 @socketio.event
@@ -34,6 +34,17 @@ def my_event(message):
     session["receive_count"] = session.get("receive_count", 0) + 1
     # send response back to client
     emit("my_response", {"data": message["data"], "count": session["receive_count"]})
+
+
+@socketio.event
+def video_frame(message):
+    file_exists = os.path.isfile("frame.png")
+    image_data = base64.b64decode(message["data"].split(",")[1])
+    if not file_exists or os.path.getsize("frame.png") == 0:
+        # Only write if file doesn't exist or is empty
+        with open("frame.png", "wb") as f:
+            f.write(image_data)
+            f.close()
 
 
 @socketio.event
