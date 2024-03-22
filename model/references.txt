@@ -1,0 +1,8 @@
+u-net paper
+https://arxiv.org/pdf/1505.04597.pdf
+
+blog on semantic segmentation
+https://towardsdatascience.com/understanding-semantic-segmentation-with-unet-6be4f42d4b47
+
+blog transposed convolution
+https://freedium.cfd/https://naokishibuya.medium.com/up-sampling-with-transposed-convolution-9ae4f2df52d0
